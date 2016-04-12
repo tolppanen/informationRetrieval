@@ -12,6 +12,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
@@ -38,6 +40,7 @@ public class LuceneSearchApp {
 
 
 	EnglishAnalyzer analyzer;
+	//StandardAnalyzer analyzer;
 	Directory index;
 	IndexWriterConfig config;
 	
@@ -56,7 +59,20 @@ public class LuceneSearchApp {
 	}
 
 	public void index(List<DocumentInCollection> docs) throws IOException {
+		//EnglishAnalyzer with default stop word set
 		analyzer = new EnglishAnalyzer();
+		
+		//StandardAnalyzer -- remove comments below and on line 42
+		//analyzer = new StandardAnalyzer();
+		
+		//EnglishAnalyzer with NO stop words -- remove comments below
+		/*CharArraySet stopwords = new CharArraySet(1, false);
+		stopwords.clear();
+		analyzer = new EnglishAnalyzer(stopwords);*/
+		
+		//For checking the stop words -- remove comments, NOT needed in program
+		//System.out.println(analyzer.getStopwordSet());
+		
 		index = new RAMDirectory();
 		config = new IndexWriterConfig(analyzer);
 		IndexWriter writer = new IndexWriter(index, config);
@@ -83,7 +99,7 @@ public class LuceneSearchApp {
 
 			for (int i = 0; i < hits.length; i++) {
 				Document result = searcher.doc(hits[i].doc);
-				results.add("Score:" + " "  + hits[i].score + " - " + result.toString());
+				results.add("Score:" + " " + hits[i].score + " - " + result);
 			}
 
 			return results;
