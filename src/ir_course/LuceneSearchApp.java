@@ -19,12 +19,13 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -72,6 +73,7 @@ public class LuceneSearchApp {
 			throws IOException, ParseException {		
 			DirectoryReader reader = DirectoryReader.open(index);
 			IndexSearcher searcher = new IndexSearcher(reader);
+			//searcher.setSimilarity(new BM25Similarity());
 			Query q = new QueryParser("abstract", analyzer).parse(queryString);
 			ScoreDoc[] hits = searcher.search(q,null,100).scoreDocs;
 			
