@@ -2,7 +2,9 @@
  * Skeleton class for the Lucene search program implementation
  * Assignment solution on 2016-04-11
  * * Antti Tolppanen 289795 <antti.tolppanen@aalto.fi>
- * 
+ * * Fredrik Kaksonen 220848 <fredrik.kaksonen@aalto.fi>
+ * * Annukka Jänkälä 220806
+ * * Joanna Mehtälä 345480
  * 
  */
 package ir_course;
@@ -34,19 +36,14 @@ import org.apache.lucene.store.RAMDirectory;
 public class LuceneSearchApp {
 
 	public LuceneSearchApp() {
-
 	}
-	
 
-
-	EnglishAnalyzer analyzer;
-	//StandardAnalyzer analyzer;
+	EnglishAnalyzer engAnalyzer;
+	StandardAnalyzer standAnalyzer = new StandardAnalyzer();
 	Directory index;
 	IndexWriterConfig config;
 	
-
-
-
+	
 	public static void addDoc(IndexWriter w, DocumentInCollection feedItem)
 			throws IOException {
 		Document doc = new Document();
@@ -58,23 +55,12 @@ public class LuceneSearchApp {
 		w.addDocument(doc);
 	}
 
+	// Method for indexing using EnglishAnalyzer (Porter stemming + default stop word set)
 	public void index(List<DocumentInCollection> docs) throws IOException {
 		//EnglishAnalyzer with default stop word set
-		analyzer = new EnglishAnalyzer();
-		
-		//StandardAnalyzer -- remove comments below and on line 42
-		//analyzer = new StandardAnalyzer();
-		
-		//EnglishAnalyzer with NO stop words -- remove comments below
-		/*CharArraySet stopwords = new CharArraySet(1, false);
-		stopwords.clear();
-		analyzer = new EnglishAnalyzer(stopwords);*/
-		
-		//For checking the stop words -- remove comments, NOT needed in program
-		//System.out.println(analyzer.getStopwordSet());
-		
+		engAnalyzer = new EnglishAnalyzer();
 		index = new RAMDirectory();
-		config = new IndexWriterConfig(analyzer);
+		config = new IndexWriterConfig(engAnalyzer);
 		IndexWriter writer = new IndexWriter(index, config);
 		for (int i = 0; i < docs.size(); i++) {
 			if (docs.get(i).getSearchTaskNumber() == 3)
@@ -83,68 +69,91 @@ public class LuceneSearchApp {
 		writer.close();
 	}
 	
-
-
+	// Method for indexing using StandardAnalyzer (no stemming + default stop word set)
+	public void index2(List<DocumentInCollection> docs) throws IOException {
+		index = new RAMDirectory();
+		config = new IndexWriterConfig(standAnalyzer);
+		IndexWriter writer = new IndexWriter(index, config);
+		for (int i = 0; i < docs.size(); i++) {
+			if (docs.get(i).getSearchTaskNumber() == 3)
+				addDoc(writer, docs.get(i));
+		}
+		writer.close();
+	}
+	
+	// Method for indexing using modified EnglishAnalyzer (Porter stemming + NO stop words)
+	public void index3(List<DocumentInCollection> docs) throws IOException {	
+		//EnglishAnalyzer with NO stop words
+		CharArraySet stopwords = new CharArraySet(1, false);
+		stopwords.clear();
+		engAnalyzer = new EnglishAnalyzer(stopwords);
+			
+		index = new RAMDirectory();
+		config = new IndexWriterConfig(engAnalyzer);
+		IndexWriter writer = new IndexWriter(index, config);
+		for (int i = 0; i < docs.size(); i++) {
+			if (docs.get(i).getSearchTaskNumber() == 3)
+				addDoc(writer, docs.get(i));
+		}
+		writer.close();
+	}
+	
+	// Search method - read comments inside the method
 	public List<String> search(String queryString)
 			throws IOException, ParseException {		
 			DirectoryReader reader = DirectoryReader.open(index);
 			IndexSearcher searcher = new IndexSearcher(reader);
+			
+			//To change ranking method from VSM to BM25 uncomment line below
 			//searcher.setSimilarity(new BM25Similarity());
-			Query q = new QueryParser("abstract", analyzer).parse(queryString);
+			
+			Query q = new QueryParser("abstract", standAnalyzer).parse(queryString);
 			ScoreDoc[] hits = searcher.search(q,null,100).scoreDocs;
 			
-			
-			
 			List<String> results = new LinkedList<String>();
-
 			for (int i = 0; i < hits.length; i++) {
-				Document result = searcher.doc(hits[i].doc);
-				results.add("Score:" + " " + hits[i].score + " - " + result);
+				results.add("¨" + hits[i].score + "¨" + searcher.doc(hits[i].doc).get("title") + "¨"
+						+ searcher.doc(hits[i].doc).get("abstract") + "¨"
+						+ searcher.doc(hits[i].doc).get("relevance") + "¨"
+						+ searcher.doc(hits[i].doc).get("query"));
 			}
-
 			return results;
-
 	}
 
-	public void printQuery(Query searchQuery) {
-		System.out.println("Search (");
-		if (searchQuery != null) {
-			System.out.println("in document: " + searchQuery);
-			if (searchQuery != null)
-				System.out.println("; ");
-		}
-
-	}
-
+	// Method for printing the search results
 	public void printResults(List<String> results) {
 		if (results.size() > 0) {
 			for (int i = 0; i < results.size(); i++) {
-				System.out.println(" " + (i + 1) + ". " + results.get(i));
-				System.out.println("=========================================");
+				System.out.println((i+1) + results.get(i));
 			}
 		} else
 			System.out.println(" no results");
 	}
 	
-
-
+	// Main method - read comments inside the method
 	public static void main(String[] args) throws IOException, ParseException {
 		if (args.length > 0) {
 			LuceneSearchApp engine = new LuceneSearchApp();
-
 			DocumentCollectionParser parser = new DocumentCollectionParser();
 			parser.parse(args[0]);
 			List<DocumentInCollection> docs = parser.getDocuments();
 			List<String> results = new LinkedList<String>();
-
+			
+			//The indexing method used, to change indexing method: comment and uncomment lines below
+				// Indexing with Porter stemming and stop words
 			engine.index(docs);
+				// Indexing with no stemming but with stop words
+			//engine.index2(docs);
+				// Indexing with Porter stemming and NO stop words
+			//engine.index3(docs);
 			
+			//The search query used, to change query: comment and uncomment lines below
+			results = engine.search("Content based video annotation");
+			//results = engine.search("Automatic or semiautomatic video tagging");
+			//results = engine.search("feature based Multimedia annotation");
 			
-
-			//Input search string as an argument on the line below i.e. "video media"
-			results = engine.search("video media");
 			engine.printResults(results);
-
+			
 		} else
 			System.out
 					.println("ERROR: the path of a RSS Feed file has to be passed as a command line argument.");
